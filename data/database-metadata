@@ -1,0 +1,12 @@
+# Description
+The database contains the following headers:
+- satisfaction_level: float
+- last_evaluation: float, decimal years since last evaluation
+- number_project: integer, number of active projects
+- average_montly_hours: integer, average number of hours worked per month
+- time_spend_company: integer, years employed at the company
+- Work_accident: boolean, during their employment, did they have an accident (1 is yes, 0 is no)
+- left: boolean, did they quit (1 is yes, 0 is no)
+- promotion_last_5years: boolean, have they had a promotion in the last 5 years (1 is yes, 0 is no)
+- sales: categorical: what department are they in (5+ departments)
+- salary: categorical: what is their salary relative to the median salary for their position (low, medium, high)
