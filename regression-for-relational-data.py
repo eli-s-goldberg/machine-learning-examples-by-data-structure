@@ -1,7 +1,7 @@
 """
 In this example, we'll be using the relational database to create a standard ML problem.
-The problem we'll be addressing is, how can we develop a model to predict worker satisfaction?
-Worker satisfaction is a float value, and ranges between 0 and 1.
+The problem we'll be addressing is, how can we develop a model to predict if they quit (turnover).
+Turnover is boolean. 0 means didn't quit. 1 means quit.
 
 Notes: categorical data will be one-hot encoded.
 Salary data is difference from median.
@@ -66,7 +66,7 @@ train_test, validate = np.split(ohe_rel_data.sample(frac=1),
                                 [int(.8 * len(ohe_rel_data))])
 
 # choose target feature; here we choose: 'satisfaction'
-target_feature = 'satisfaction'
+target_feature = 'turnover'
 
 # extract it from the relational data
 train_test_target_data = train_test[target_feature]
@@ -138,9 +138,7 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
 
     model = torch.nn.Sequential(
         torch.nn.Linear(X_train_tensor.shape[1], hidden_dim),
-        torch.nn.LeakyReLU(),
-        # torch.nn.ReLU(),
-        # torch.nn.RReLU(),
+        torch.nn.Sigmoid(),
         torch.nn.Linear(hidden_dim, d_out), )
 
     # The nn package also contains definitions of popular loss functions; in this
@@ -157,7 +155,7 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
     loss_track = []
     r2_track = []
 
-    epochs = 5000
+    epochs = 10000
 
     for t in range(epochs):
         # Forward pass: compute predicted y by passing x to the model. Module objects
@@ -169,7 +167,7 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
         # Compute and print loss. We pass Variables containing the predicted and true
         # values of y, and the loss function returns a Variable containing the loss.
         loss = loss_fn(y_pred, y_train_tensor_Variable)
-        # print('step: ', t, 'loss: ', loss.data[0])
+        print('step: ', t, 'loss: ', loss.data[0])
         loss_track.append(loss.data[0])
 
         # calculate the R2 performance of the prediction at every step:
@@ -195,7 +193,7 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
         # parameters
         optimizer.step()
 
-    # plt.plot(range(epochs), loss_track)
+    plt.plot(range(epochs), loss_track)
     plt.plot(range(epochs), r2_track)
 
 plt.show()
