@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import torch.utils.data as data_utils
 from torch.autograd import Variable
 from sklearn.model_selection import RepeatedStratifiedKFold, RepeatedKFold
+from sklearn.metrics import r2_score
 
 # set basepath
 BasePath = os.path.dirname(__file__)
@@ -43,8 +44,9 @@ rel_data.dropna(inplace=True)
 # one-hot encode the categorical features using pandas get_dummies
 ohe_rel_data = pd.get_dummies(rel_data)
 
+
 # for neural networks, make sure to normalize the non-categorical data
-def normalize(df,non_categorical_columns):
+def normalize(df, non_categorical_columns):
     """ https://stackoverflow.com/a/26415620 """
     result = df.copy()
     for feature_name in non_categorical_columns:
@@ -53,12 +55,11 @@ def normalize(df,non_categorical_columns):
         result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
     return result
 
-non_categorical_columns = ['satisfaction','evaluation','projectCount',
-                           'averageMonthlyHours','yearsAtCompany']
 
-ohe_rel_data = normalize(ohe_rel_data,non_categorical_columns)
+non_categorical_columns = ['satisfaction', 'evaluation', 'projectCount',
+                           'averageMonthlyHours', 'yearsAtCompany']
 
-
+ohe_rel_data = normalize(ohe_rel_data, non_categorical_columns)
 
 # split the data into train_test (80%) and validate (20%) fractions
 train_test, validate = np.split(ohe_rel_data.sample(frac=1),
@@ -137,7 +138,9 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
 
     model = torch.nn.Sequential(
         torch.nn.Linear(X_train_tensor.shape[1], hidden_dim),
-        torch.nn.ReLU(),
+        torch.nn.LeakyReLU(),
+        # torch.nn.ReLU(),
+        # torch.nn.RReLU(),
         torch.nn.Linear(hidden_dim, d_out), )
 
     # The nn package also contains definitions of popular loss functions; in this
@@ -152,7 +155,11 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     loss_track = []
-    for t in range(500):
+    r2_track = []
+
+    epochs = 5000
+
+    for t in range(epochs):
         # Forward pass: compute predicted y by passing x to the model. Module objects
         # override the __call__ operator so you can call them like functions. When
         # doing so you pass a Variable of input data to the Module and it produces
@@ -162,8 +169,16 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
         # Compute and print loss. We pass Variables containing the predicted and true
         # values of y, and the loss function returns a Variable containing the loss.
         loss = loss_fn(y_pred, y_train_tensor_Variable)
-        print(t, loss.data[0])
+        # print('step: ', t, 'loss: ', loss.data[0])
         loss_track.append(loss.data[0])
+
+        # calculate the R2 performance of the prediction at every step:
+        y_train_step_numpy = np.squeeze(y_train_tensor_Variable.data.numpy())
+        y_pred_step_numpy = np.squeeze(y_pred.data.numpy())
+        r2_score_step = r2_score(y_train_step_numpy, y_pred_step_numpy)
+        r2_track.append(r2_score_step)
+        print('step: ', t, 'r2 score: ',r2_score_step )
+
 
         # Before the backward pass, use the optimizer object to zero all of the
         # gradients for the variables it will update (which are the learnable weights
@@ -179,6 +194,8 @@ for train_index, test_index in repeatKfold.split(train_test_training_data_numpy)
         # Calling the step function on an Optimizer makes an update to its
         # parameters
         optimizer.step()
-    plt.plot(range(500), loss_track)
+
+    # plt.plot(range(epochs), loss_track)
+    plt.plot(range(epochs), r2_track)
 
 plt.show()
